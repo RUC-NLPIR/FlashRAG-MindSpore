@@ -1,24 +1,30 @@
 import json
-import datasets
-from transformers import AutoTokenizer, AutoModel, AutoConfig
+from mindnlp.transformers import AutoModel, AutoTokenizer
+from mindspore.ops._primitive_cache import _get_cache_prim
+import mindspore as ms
+import mindspore.numpy as mnp
+import mindspore.ops as ops
+from mindnlp.dataset import load_dataset
 
 
-def load_model(model_path: str, use_fp16: bool = False):
-    model_config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-    model = AutoModel.from_pretrained(model_path, trust_remote_code=True)
-    model.eval()
-    model.cuda()
-    if use_fp16:
-        model = model.half()
-    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True, trust_remote_code=True)
-
+def load_model(
+        model_path: str,
+        use_fp16: bool = False
+    ):
+    model = AutoModel.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    
     return model, tokenizer
 
 
 def pooling(pooler_output, last_hidden_state, attention_mask=None, pooling_method="mean"):
     if pooling_method == "mean":
-        last_hidden = last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
-        return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
+        if attention_mask is not None:
+            mask = ops.ExpandDims()(attention_mask, -1).astype(ms.bool_)
+            last_hidden = mnp.where(mask, last_hidden_state, mnp.zeros_like(last_hidden_state))
+            return last_hidden.sum(axis=1) / attention_mask.sum(axis=1, keepdims=True)
+        else:
+            return last_hidden_state.mean(axis=1)
     elif pooling_method == "cls":
         return last_hidden_state[:, 0]
     elif pooling_method == "pooler":
@@ -26,9 +32,11 @@ def pooling(pooler_output, last_hidden_state, attention_mask=None, pooling_metho
     else:
         raise NotImplementedError("Pooling method not implemented!")
 
-
 def load_corpus(corpus_path: str):
-    corpus = datasets.load_dataset("json", data_files=corpus_path, split="train", num_proc=4)
+    corpus = load_dataset(
+            'json',
+            data_files=corpus_path,
+            split="train")
     return corpus
 
 
@@ -44,6 +52,13 @@ def read_jsonl(file_path):
 
 
 def load_docs(corpus, doc_idxs):
-    results = [corpus[int(idx)] for idx in doc_idxs]
-
-    return results
+    docs = []
+    idx_set = set(doc_idxs)
+    for i, doc in enumerate(corpus.create_dict_iterator()):
+        if i in idx_set:
+            doc_str = {key: str(value) for key, value in doc.items()}
+            docs.append(doc_str)
+            idx_set.remove(i)
+        if not idx_set:
+            break
+    return docs
