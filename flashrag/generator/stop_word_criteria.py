@@ -2,16 +2,17 @@
 Created by Nestor Demeure.
 This software is released under the Apache License 2.0.
 """
-
 from typing import List
-import torch
-from transformers import StoppingCriteria, AutoTokenizer
+import mindspore as ms
+import mindspore.nn as nn
+from mindspore import dtype as mstype
+from mindnlp.transformers import StoppingCriteria, AutoTokenizer
 
 
 class StopWordCriteria(StoppingCriteria):
     """
     A stopping criteria that halts the text generation process if any specified stop word is encountered.
-
+    
     Inspired by https://discuss.huggingface.co/t/implimentation-of-stopping-criteria-list/20040/9
     And: https://github.com/outlines-dev/outlines/blob/main/outlines/generate/api.py
     """
@@ -19,7 +20,7 @@ class StopWordCriteria(StoppingCriteria):
     def __init__(self, tokenizer: AutoTokenizer, prompts: List[str], stop_words: List[str] = [], check_every: int = 1):
         """
         Initializes the StopWordCriteria with the necessary parameters for checking stop words during text generation.
-
+        
         Parameters:
             tokenizer (AutoTokenizer): The tokenizer for encoding prompts and stop words.
             prompts (List[str]): Initial prompts used for generation, needed to determine where generated text begins.
@@ -28,24 +29,22 @@ class StopWordCriteria(StoppingCriteria):
         """
         super().__init__()
         self.tokenizer = tokenizer
-        self.input_sizes = [self.tokenizer.encode(prompt, return_tensors="pt").size(-1) for prompt in prompts]
+        self.input_sizes = [self.tokenizer.encode(prompt, return_tensors="pt").shape[-1] for prompt in prompts]
         self.stop_words = stop_words
-        self.max_stop_word_size = max(
-            (self.tokenizer.encode(word, return_tensors="pt").size(-1) for word in stop_words), default=0
-        )
+        self.max_stop_word_size = max((self.tokenizer.encode(word, return_tensors="pt").shape[-1] for word in stop_words), default=0)
         self.check_every = check_every
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+    def __call__(self, input_ids, scores, **kwargs) -> bool:
         """
         Determines whether to stop generation based on the presence of stop words.
-
+        
         Stops if a stop word is found in *all* batch elements *and* the sequence length is a multiple of `check_every`.
         Note: Delay in stopping may occur if `check_every > 1`.
 
         Parameters:
             input_ids (torch.LongTensor): Generated token IDs.
             scores (torch.FloatTensor): Generation scores for each token. Not used here.
-
+        
         Returns:
             bool: True to stop generation, False to continue.
         """
@@ -62,21 +61,19 @@ class StopWordCriteria(StoppingCriteria):
             latest_tokens = input_ids[i, prompt_size:][-max_new_tokens:]
 
             # Check for stop words in the decoded text
-            if not any(
-                word in self.tokenizer.decode(latest_tokens, skip_special_tokens=True) for word in self.stop_words
-            ):
+            if not any(word in self.tokenizer.decode(latest_tokens, skip_special_tokens=True) for word in self.stop_words):
                 return False  # Continue generation if any batch item lacks stop words
 
         return True  # Stop generation if all conditions are met
 
-    def extract_answers(self, input_ids: torch.LongTensor, strip_stopword: bool = True) -> List[str]:
+    def extract_answers(self, input_ids, strip_stopword: bool = True) -> List[str]:
         """
         Extracts generated answers by removing prompts and optionally stopping at the first stop word.
-
+        
         Parameters:
             input_ids (torch.LongTensor): Generated token IDs.
             strip_stopword (bool): Determines whether the stop word is removed from the output.
-
+            
         Returns:
             List[str]: Extracted answers, with or without stop words.
         """
