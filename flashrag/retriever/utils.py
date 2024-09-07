@@ -13,7 +13,7 @@ def load_model(
     ):
     model = AutoModel.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    
+
     return model, tokenizer
 
 
@@ -52,13 +52,16 @@ def read_jsonl(file_path):
 
 
 def load_docs(corpus, doc_idxs):
-    docs = []
+    doc_dict = {}
     idx_set = set(doc_idxs)
+
     for i, doc in enumerate(corpus.create_dict_iterator()):
         if i in idx_set:
             doc_str = {key: str(value) for key, value in doc.items()}
-            docs.append(doc_str)
+            doc_dict[i] = doc_str
             idx_set.remove(i)
         if not idx_set:
             break
+
+    docs = [doc_dict[idx] for idx in doc_idxs if idx in doc_dict]
     return docs
