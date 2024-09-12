@@ -52,16 +52,14 @@ def read_jsonl(file_path):
 
 
 def load_docs(corpus, doc_idxs):
-    doc_dict = {}
-    idx_set = set(doc_idxs)
-
-    for i, doc in enumerate(corpus.create_dict_iterator()):
-        if i in idx_set:
-            doc_str = {key: str(value) for key, value in doc.items()}
-            doc_dict[i] = doc_str
-            idx_set.remove(i)
-        if not idx_set:
-            break
-
-    docs = [doc_dict[idx] for idx in doc_idxs if idx in doc_dict]
+    docs = []
+    for idx in doc_idxs:
+        doc_item = corpus[int(idx)]
+        if len(doc_item) == 2:
+            doc_item = {"id": doc_item[0], "contents": doc_item[1]}
+        elif len(doc_item) == 3:
+            doc_item = {"id": doc_item[0], "title": doc_item[1], "contents": doc_item[2]}
+        else:
+            assert False
+        docs.append(doc_item)
     return docs
