@@ -1,14 +1,6 @@
 # <div align="center">⚡FlashRAG-MindSpore: Efficient RAG Toolkit Based on MindSpore<div>
 
 <div align="center">
-<div style="background-color: #e6f3ff; border-left: 6px solid #2196F3; margin-bottom: 15px; padding: 10px; font-size: 16px;">
-  <strong>🚀 New Release:</strong> FlashRAG is now available on MindSpore, an AI Framework that supports Chinese hardwares.
-</div>
-</div>
-
-
-
-<div align="center">
 <a href="https://arxiv.org/abs/2405.13576" target="_blank"><img src=https://img.shields.io/badge/arXiv-b5212f.svg?logo=arxiv></a>
 <a href="https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets/" target="_blank"><img src=https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace%20Datasets-27b3b4.svg></a>
 <a href="https://github.com/RUC-NLPIR/FlashRAG/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-green"></a>
@@ -17,6 +9,12 @@
 <a><img alt="Chinese Hardwares" src="https://img.shields.io/badge/Chinese_Hardwares-Compatible-brightgreen"></a>
 </div>
 
+
+<div align="center">
+<div style="background-color: #e6f3ff; border-left: 6px solid #2196F3; margin-bottom: 15px; padding: 10px; font-size: 16px;">
+  <strong>🚀 New Release:</strong> FlashRAG is now available on MindSpore, an AI Framework that supports Chinese hardwares.
+</div>
+</div>
 
 <h4 align="center">
 
