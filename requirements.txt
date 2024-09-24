@@ -1,4 +1,3 @@
-cohere
 base58
 nltk
 numpy
@@ -8,9 +7,7 @@ pyserini
 PyYAML
 rank_bm25
 rouge
-setuptools
 spacy>=3.6.1
 tiktoken
 tqdm
-voyageai
 streamlit

@@ -1,12 +1,20 @@
-# <div align="center">⚡FlashRAG: A Python Toolkit for Efficient RAG Research<div>
+# <div align="center">⚡FlashRAG-MindSpore: Efficient RAG Toolkit Based on MindSpore<div>
 
+<div align="center">
+<div style="background-color: #e6f3ff; border-left: 6px solid #2196F3; margin-bottom: 15px; padding: 10px; font-size: 16px;">
+  <strong>🚀 New Release:</strong> FlashRAG is now available on MindSpore, an AI Framework that supports Chinese hardwares.
+</div>
+</div>
 
 <div align="center">
 <a href="https://arxiv.org/abs/2405.13576" target="_blank"><img src=https://img.shields.io/badge/arXiv-b5212f.svg?logo=arxiv></a>
 <a href="https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets/" target="_blank"><img src=https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace%20Datasets-27b3b4.svg></a>
 <a href="https://github.com/RUC-NLPIR/FlashRAG/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-green"></a>
 <a><img alt="Static Badge" src="https://img.shields.io/badge/made_with-Python-blue"></a>
+<a><img alt="MindSpore" src="https://img.shields.io/badge/MindSpore-Supported-red"></a>
+<a><img alt="Chinese Chips" src="https://img.shields.io/badge/Chinese_Chips-Compatible-brightgreen"></a>
 </div>
+
 
 <h4 align="center">
 
@@ -21,13 +29,17 @@
 </p>
 
 </h4>
-FlashRAG is a Python toolkit for the reproduction and development of Retrieval Augmented Generation (RAG) research. Our toolkit includes 32 pre-processed benchmark RAG datasets and 14 state-of-the-art RAG algorithms. 
+
+
+
+FlashRAG-MindSpore is a Python toolkit for Retrieval Augmented Generation (RAG) research, built on the **MindSpore framework and MindNLP**. This toolkit is optimized for Chinese-developed chips and computing platforms while maintaining compatibility with mainstream deep learning environments. It includes 32 pre-processed benchmark RAG datasets and 14 state-of-the-art RAG algorithms, all fully supported in the MindSpore ecosystem.
 
 <p align="center">
 <img src="asset/framework.jpg">
 </p>
 
-With FlashRAG and provided resources, you can effortlessly reproduce existing SOTA works in the RAG domain or implement your custom RAG processes and components.
+With FlashRAG-MindSpore and our provided resources, you can effortlessly reproduce existing SOTA works in the RAG domain or implement your custom RAG processes and components. This toolkit is designed to leverage the performance advantages of Chinese-developed hardware while remaining accessible to the global research community.
+
 <p>
 <a href="https://trendshift.io/repositories/10454" target="_blank"><img src="https://trendshift.io/api/badge/repositories/10454" alt="RUC-NLPIR%2FFlashRAG | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </p>
