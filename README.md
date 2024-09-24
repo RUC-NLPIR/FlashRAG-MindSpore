@@ -1,7 +1,7 @@
 # <div align="center">⚡FlashRAG-MindSpore: Efficient RAG Toolkit Based on MindSpore<div>
 
 >[!Note]
-> This project is based on the MindSpore framework and MindNLP.
+> This project is based on the MindSpore and MindNLP.
 
 <div align="center">
 <a href="https://arxiv.org/abs/2405.13576" target="_blank"><img src=https://img.shields.io/badge/arXiv-b5212f.svg?logo=arxiv></a>
