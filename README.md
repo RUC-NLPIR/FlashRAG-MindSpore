@@ -57,7 +57,7 @@ With FlashRAG-MindSpore and our provided resources, you can effortlessly reprodu
 
 ## :wrench: Installation 
 
-##### Step1: Install MindSpore
+#### Step1: Install MindSpore
 
 Due to the fact that the installation of MindSpore framework depends on different hardware platforms, we do not directly install it automatically. Please follow the official installation link for installation.
 
