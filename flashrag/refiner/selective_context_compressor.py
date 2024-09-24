@@ -1,7 +1,3 @@
-# Implementation of Selective-Context, modified from official repo: https://github.com/liyucheng09/Selective_Context
-# Licensed under The MIT License
-
-
 import re
 from typing import List, Tuple
 import spacy
@@ -12,7 +8,6 @@ sys.path.append("..")
 from dataclasses import dataclass
 from nltk.tokenize import word_tokenize
 import time
-# import torch
 import mindspore as ms
 import mindspore.ops as ops
 from mindnlp.transformers import GPT2Tokenizer, GPT2LMHeadModel, BertTokenizer
@@ -42,6 +37,7 @@ class SelectiveContext:
 
     def __init__(self, model_type = 'gpt2', model_path = 'openai-community/gpt2', lang = 'en'):
 
+        print("refiner4")
         self.model_type = model_type
         self.model_path = model_path
         self.lang = lang
@@ -106,7 +102,7 @@ class SelectiveContext:
         elif self.lang == 'zh':
             text = f"[CLS]{text}"
         # with torch.inference_mode(mode=True):
-        encoding = self.tokenizer(text, add_special_tokens=False, return_tensors='pt')
+        encoding = self.tokenizer(text, add_special_tokens=False, return_tensors='ms')
         # encoding = encoding.to(self.model.device)
         outputs = self.model(**encoding)
         logits = outputs.logits

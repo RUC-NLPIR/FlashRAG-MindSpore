@@ -9,13 +9,10 @@ import yaml
 import nltk
 import numpy as np
 import tiktoken
-# import torch
-# import torch.nn.functional as F
-# from torch.utils.data import DataLoader,Dataset
 import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore.dataset import GeneratorDataset
+from mindspore.dataset import GeneratorDataset,Dataset
 from mindnlp.transformers import (
     AutoConfig,
     AutoModelForCausalLM,
@@ -31,6 +28,7 @@ class TokenClfDataset():
         tokenizer=None,
         model_name="bert-base-multilingual-cased",
     ):
+        # print("refiner1")
         self.len = len(texts)
         self.texts = texts
         self.tokenizer = tokenizer
@@ -72,7 +70,7 @@ class TokenClfDataset():
 
         ids = self.tokenizer.convert_tokens_to_ids(tokenized_text)
 
-        return np.array(ids + attn_mask,dtype=np.int64)
+        return np.array(ids + attn_mask,dtype=np.int32)
         # {
         #     "ids": ms.tensor(ids, dtype=ms.int64),
         #     "mask": ms.tensor(attn_mask, dtype=ms.int64),
@@ -317,13 +315,14 @@ class PromptCompressor:
             {"additional_special_tokens": self.added_tokens}
         )
         self.model.resize_token_embeddings(len(self.tokenizer))
+        self.model.set_grad(requires_grad=False)
 
     def load_model(
         self, model_name: str, device_map: str = "cuda", model_config: dict = {}
     ):
-        trust_remote_code = model_config.get("trust_remote_code", True)
-        if "trust_remote_code" not in model_config:
-            model_config["trust_remote_code"] = trust_remote_code
+        # trust_remote_code = model_config.get("trust_remote_code", True)
+        # if "trust_remote_code" not in model_config:
+        #     model_config["trust_remote_code"] = trust_remote_code
         config = AutoConfig.from_pretrained(model_name, **model_config)
 
         MODEL_CLASS = (
@@ -336,12 +335,13 @@ class PromptCompressor:
             if any(key in device_map for key in ["cuda", "cpu", "mps"])
             else "cuda"
         )
+        # print(1,config)
         model = MODEL_CLASS.from_pretrained(
             model_name,
-            torch_dtype=model_config.pop(
+            ms_dtype=model_config.pop(
                 "torch_dtype", "auto" if device_map == "cuda" else ms.float32
             ),
-            device_map=device_map,
+            # device_map=device_map,
             config=config,
             ignore_mismatched_sizes=True,
             **model_config,
@@ -355,6 +355,9 @@ class PromptCompressor:
             )
         self.tokenizer = tokenizer
         self.model = model
+
+        self.model.set_grad(requires_grad=False)
+
         self.context_idxs = []
         self.max_position_embeddings = config.max_position_embeddings
     
@@ -371,7 +374,7 @@ class PromptCompressor:
         condition_pos_id: int = 0,
     ):
         if input_ids is None:
-            tokenized_text = self.tokenizer(text, return_tensors="pt")
+            tokenized_text = self.tokenizer(text, return_tensors="ms")
             input_ids = tokenized_text["input_ids"]
             attention_mask = tokenized_text["attention_mask"]
         if past_key_values is not None:
@@ -394,7 +397,7 @@ class PromptCompressor:
         # Flatten the tokens
         active = (attention_mask[:, past_length:end] == 1)[..., :-1].view(-1)
         active_logits = shift_logits.view(-1, shift_logits.shape[-1])[active]
-        active_labels = shift_labels.view(-1)[active]
+        active_labels = shift_labels.view(-1)[active].type(dtype=ms.int32)
         loss_fct = nn.CrossEntropyLoss(reduction="none")
         loss = loss_fct(active_logits, active_labels)
         if condition_mode == "before":
@@ -1701,9 +1704,7 @@ class PromptCompressor:
         ppl = ppl[ppl != 10000]
         target_token = max(0, min(len(ppl) - 1, int(len(ppl) * ratio) - 1))
         return (
-            ppl.sort(descending=not condition_flag)
-            .values[target_token]
-            .item()
+            ppl.sort(descending=not condition_flag)[0][target_token].item()
         )
 
     def iterative_compress_prompt(
@@ -1728,7 +1729,7 @@ class PromptCompressor:
             )
         context = "\n\n".join(context)
         tokenized_text = self.tokenizer(
-            context, return_tensors="pt", add_special_tokens=False
+            context, return_tensors="ms", add_special_tokens=False
         )
         input_ids = tokenized_text["input_ids"]
         attention_mask = tokenized_text["attention_mask"]
@@ -2005,200 +2006,6 @@ class PromptCompressor:
         condition_in_question: str,
         context_tokens_length: list,
     ):
-        def get_distance_bm25(corpus, query):
-            from rank_bm25 import BM25Okapi
-
-            tokenized_corpus = [doc.split(" ") for doc in corpus]
-            bm25 = BM25Okapi(tokenized_corpus)
-            tokenized_query = query.split(" ")
-            doc_scores = bm25.get_scores(tokenized_query)
-            idx = [(ii, 0) for ii in (-doc_scores).argsort()]
-            return idx
-
-        def get_distance_gzip(corpus, query):
-            def get_score(x, y):
-                cx, cy = len(gzip.compress(x.encode())), len(gzip.compress(y.encode()))
-                cxy = len(gzip.compress(f"{x} {y}".encode()))
-                return (cxy - min(cx, cy)) / max(cx, cy)
-
-            import gzip
-
-            doc_scores = [get_score(doc, query) for doc in corpus]
-            idx = [(ii, 0) for ii in np.argsort(doc_scores)]
-            return idx
-
-        def get_distance_sentbert(corpus, query):
-            from sentence_transformers import SentenceTransformer, util
-
-            if self.retrieval_model is None or self.retrieval_model_name != rank_method:
-                self.retrieval_model = SentenceTransformer("multi-qa-mpnet-base-dot-v1")
-                self.retrieval_model_name = rank_method
-            doc_embeds = self.retrieval_model.encode(corpus)
-            query = self.retrieval_model.encode(query)
-            doc_scores = -util.dot_score(doc_embeds, query).cpu().numpy().reshape(-1)
-            idx = [(ii, 0) for ii in np.argsort(doc_scores)]
-            return idx
-
-        def get_distance_openai(corpus, query):
-            import openai
-            from sentence_transformers import util
-
-            openai.api_key = self.open_api_config.get("api_key", "")
-            openai.api_base = self.open_api_config.get(
-                "api_base", "https://api.openai.com/v1"
-            )
-            openai.api_type = self.open_api_config.get("api_type", "open_ai")
-            openai.api_version = self.open_api_config.get("api_version", "2023-05-15")
-            engine = self.open_api_config.get("engine", "text-embedding-ada-002")
-
-            def get_embed(text):
-                return openai.Embedding.create(
-                    input=[text.replace("\n", " ")], engine=engine
-                )["data"][0]["embedding"]
-
-            doc_embeds = [get_embed(i) for i in corpus]
-            query = get_embed(query)
-            doc_scores = -util.dot_score(doc_embeds, query).cpu().numpy().reshape(-1)
-            idx = [(ii, 0) for ii in np.argsort(doc_scores)]
-            return idx
-
-        def get_distance_sentbert_bge(corpus, query):
-            from sentence_transformers import SentenceTransformer, util
-
-            if self.retrieval_model is None or self.retrieval_model_name != rank_method:
-                self.retrieval_model = SentenceTransformer("BAAI/bge-large-en-v1.5")
-                self.retrieval_model_name = rank_method
-            doc_embeds = self.retrieval_model.encode(
-                [i for i in corpus], normalize_embeddings=True
-            )
-            query = self.retrieval_model.encode(query, normalize_embeddings=True)
-            doc_scores = -util.dot_score(doc_embeds, query).cpu().numpy().reshape(-1)
-            idx = [(ii, 0) for ii in np.argsort(doc_scores)]
-            return idx
-
-        def get_distance_bge_ranker(corpus, query):
-            from mindnlp.transformers import AutoModelForSequenceClassification, AutoTokenizer
-            pairs = [[i, query] for i in corpus]
-            if self.retrieval_model is None or self.retrieval_model_name != rank_method:
-                tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-reranker-large")
-                model = (
-                    AutoModelForSequenceClassification.from_pretrained(
-                        "BAAI/bge-reranker-large"
-                    )
-                )
-                self.retrieval_model = [tokenizer, model]
-                self.retrieval_model_name = rank_method
-            # with torch.inference_mode(mode=True):
-            inputs = self.retrieval_model[0](
-                pairs,
-                padding=True,
-                truncation=True,
-                return_tensors="pt",
-                max_length=512,
-            )
-            scores = (
-                self.retrieval_model[1](**inputs, return_dict=True)
-                .logits.view(-1,)
-                .float()
-            )
-            idx = [(ii, 0) for ii in np.argsort(-scores)]
-            return idx
-
-        def get_distance_bge_llmembedder(corpus, query):
-            from mindnlp.transformers import AutoModel, AutoTokenizer
-
-            if self.retrieval_model is None or self.retrieval_model_name != rank_method:
-                tokenizer = AutoTokenizer.from_pretrained("BAAI/llm-embedder")
-                model = (
-                    AutoModel.from_pretrained("BAAI/llm-embedder")
-                )
-                self.retrieval_model = [tokenizer, model]
-                self.retrieval_model_name = rank_method
-
-            instruction_qa_query = (
-                "Represent this query for retrieving relevant documents: "
-            )
-            instruction_qa_key = "Represent this document for retrieval: "
-            queries = [instruction_qa_query + query for _ in corpus]
-            keys = [instruction_qa_key + key for key in corpus]
-            # with torch.inference_mode(mode=True):
-            query_inputs = self.retrieval_model[0](
-                queries,
-                padding=True,
-                truncation=True,
-                return_tensors="pt",
-                max_length=512,
-            )
-            key_inputs = self.retrieval_model[0](
-                keys,
-                padding=True,
-                truncation=True,
-                return_tensors="pt",
-                max_length=512,
-            )
-            query_outputs = self.retrieval_model[1](**query_inputs)
-            key_outputs = self.retrieval_model[1](**key_inputs)
-            # CLS pooling
-            query_embeddings = query_outputs.last_hidden_state[:, 0]
-            key_embeddings = key_outputs.last_hidden_state[:, 0]
-            # Normalize
-            l2_normalize = ops.L2Normalize(axis=1)
-            query_embeddings = l2_normalize(query_embeddings)
-            key_embeddings = l2_normalize(key_embeddings)
-            similarity = query_embeddings @ key_embeddings.T
-            idx = [(ii, 0) for ii in np.argsort(-similarity[0])]
-            return idx
-
-        def get_distance_jinza(corpus, query):
-            from numpy.linalg import norm
-            from mindnlp.transformers import AutoModel
-
-            def cos_sim(a, b):
-                return (a @ b.T) / (norm(a) * norm(b))
-
-            if self.retrieval_model is None or self.retrieval_model_name != rank_method:
-                model = (
-                    AutoModel.from_pretrained(
-                        "jinaai/jina-embeddings-v2-base-en", trust_remote_code=True
-                    )
-                )
-                self.retrieval_model = model
-                self.retrieval_model_name = rank_method
-
-            doc_embeds = self.retrieval_model.encode(corpus)
-            query = self.retrieval_model.encode(query)
-            doc_scores = cos_sim(doc_embeds, query)
-            idx = [(ii, 0) for ii in np.argsort(-doc_scores)]
-            return idx
-
-        def get_distance_voyageai(corpus, query):
-            import voyageai
-            from sentence_transformers import util
-
-            voyageai.api_key = self.open_api_config.get("voyageai_api_key", "")
-
-            def get_embed(text):
-                return voyageai.get_embedding(text, model="voyage-01")
-
-            doc_embeds = [get_embed(i) for i in corpus]
-            query = get_embed(query)
-            doc_scores = -util.dot_score(doc_embeds, query).cpu().numpy().reshape(-1)
-            idx = [(ii, 0) for ii in np.argsort(doc_scores)]
-            return idx
-
-        def get_distance_cohere(corpus, query):
-            import cohere
-
-            api_key = self.open_api_config.get("cohere_api_key", "")
-            co = cohere.Client(api_key)
-            results = co.rerank(
-                model="rerank-english-v2.0", query=query, documents=corpus, top_n=20
-            )
-            c_map = {jj: ii for ii, jj in enumerate(corpus)}
-            doc_rank = [c_map[ii.document["text"]] for ii in results]
-            idx = [(ii, 0) for ii in doc_rank]
-            return idx
-
         def get_distance_longllmlingua(corpus, query):
             context_ppl = [
                 self.get_condition_ppl(
@@ -2213,31 +2020,7 @@ class PromptCompressor:
             sort_direct = -1 if condition_in_question == "none" else 1
             ys = sorted(enumerate(context_ppl), key=lambda x: sort_direct * x[1])
             return ys
-
-        method = None
-        if rank_method == "bm25":
-            method = get_distance_bm25
-        elif rank_method == "gzip":
-            method = get_distance_gzip
-        elif rank_method == "sentbert":
-            method = get_distance_sentbert
-        elif rank_method == "openai":
-            method = get_distance_openai
-        elif rank_method in ["longllmlingua", "llmlingua"]:
-            method = get_distance_longllmlingua
-        elif rank_method == "bge":
-            method = get_distance_sentbert_bge
-        elif rank_method == "bge_reranker":
-            method = get_distance_bge_ranker
-        elif rank_method == "bge_llmembedder":
-            method = get_distance_bge_llmembedder
-        elif rank_method == "jinza":
-            method = get_distance_jinza
-        elif rank_method == "voyageai":
-            method = get_distance_voyageai
-        elif rank_method == "cohere":
-            method = get_distance_cohere
-        return method(context, question)
+        return get_distance_longllmlingua(context, question)
 
     def segment_structured_context(
         self,

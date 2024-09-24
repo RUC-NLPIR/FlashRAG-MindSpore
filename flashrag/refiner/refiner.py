@@ -3,7 +3,6 @@ from mindnlp.transformers import AutoModelForSeq2SeqLM,AutoTokenizer
 from flashrag.retriever.utils import load_model, pooling
 from tqdm import tqdm
 import re
-# import torch
 import mindspore as ms
 import mindspore.ops as ops
 import numpy as np
@@ -12,6 +11,7 @@ class BaseRefiner:
     r"""Base object of Refiner method"""
 
     def __init__(self, config):
+        print("refiner3")
         self.config = config
         self.name = config['refiner_name']
         self.model_path = config['refiner_model_path']
@@ -108,7 +108,7 @@ class SelectiveContextRefiner(BaseRefiner):
             self.compress_config = config['sc_config']
         else:
             self.compress_config = default_config
-
+        
     def format_reference(self, retrieval_result):
         format_reference = ''
         for idx, doc_item in enumerate(retrieval_result):
@@ -158,7 +158,7 @@ class ExtractiveRefiner(BaseRefiner):
                                 max_length = self.encode_max_length,
                                 padding = True,
                                 truncation = True,
-                                return_tensors = "pt"
+                                return_tensors = "ms"
                             )
         inputs = {k: v.cuda() for k, v in inputs.items()}
 
@@ -254,7 +254,7 @@ class AbstractiveRecompRefiner(BaseRefiner):
         for idx in tqdm(range(0, len(format_inputs), batch_size), desc='Refining process: '):
             batch_inputs = format_inputs[idx:idx+batch_size]
             batch_inputs = self.tokenizer(batch_inputs,
-                                    return_tensors='pt',
+                                    return_tensors='ms',
                                     padding=True,
                                     truncation=True,
                                     max_length=self.max_input_length

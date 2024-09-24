@@ -12,6 +12,7 @@ from flashrag.utils import hash_object
 
 class KGTraceRefiner(BaseRefiner):
     def __init__(self, config, retriever=None, generator=None):
+        print("refiner2")
         super().__init__(config)
         self.config = config
         self.input_prompt_flag = False
