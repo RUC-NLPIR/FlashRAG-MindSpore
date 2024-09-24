@@ -24,11 +24,6 @@
 
 
 
-<div align="center">
-<div style="background-color: #e6f3ff; border-left: 6px solid #2196F3; margin-bottom: 15px; padding: 10px; font-size: 16px;">
-  <strong>🚀 New Release:</strong> FlashRAG is now available on MindSpore, an AI Framework that supports Chinese hardwares.
-</div>
-</div>
 
 <h4 align="center">
 
