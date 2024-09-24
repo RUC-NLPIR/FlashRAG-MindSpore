@@ -10,11 +10,6 @@ from mindnlp.transformers import AutoTokenizer, \
                                 T5ForConditionalGeneration,\
                                 BartForConditionalGeneration
 
-
-ms.set_context(device_target="GPU")
-# pynvml.nvmlInit()
-
-
 class BaseGenerator:
     """`BaseGenerator` is a base object of Generator model."""
 
@@ -67,7 +62,7 @@ class EncoderDecoderGenerator(BaseGenerator):
                 text_passages,
                 max_length=self.max_input_len,
                 pad_to_max_length=True,
-                return_tensors='pt',
+                return_tensors='ms',
                 truncation=True
             )
             passage_ids.append(p['input_ids'][None])
@@ -150,7 +145,7 @@ class HFCausalLMGenerator(BaseGenerator):
         if model is None:
             model = AutoModelForCausalLM.from_pretrained(
                                                         self.model_path,
-                                                        #  torch_dtype="auto",
+                                                         ms_dtype="auto",
                                                         #  device_map="auto",
                                                         #  trust_remote_code=True
                                                         )
@@ -161,13 +156,11 @@ class HFCausalLMGenerator(BaseGenerator):
         if 'qwen' not in self.model_name:
             tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "left"
-
         return model, tokenizer
 
     # @torch.inference_mode(mode=True)
     def generate(self, input_list: List[str], batch_size=None, return_scores=False, return_dict=False, **params):
         """Generate batches one by one. The generated content needs to exclude input."""
-
         if isinstance(input_list, str):
             input_list = [input_list]
         if batch_size is None:
@@ -203,10 +196,13 @@ class HFCausalLMGenerator(BaseGenerator):
         scores = []
         generated_token_ids = []
         generated_token_logits = []
-
+        self.model.set_grad(requires_grad=False)
         for idx in trange(0, len(input_list), batch_size, desc='Generation process: '):
+            # import torch
             # torch.cuda.empty_cache()
             batched_prompts = input_list[idx:idx+batch_size]
+            if type(batched_prompts[0]) is list:
+                batched_prompts = [prompt[0] for prompt in batched_prompts]
             inputs = self.tokenizer(batched_prompts,
                                     return_tensors="ms",
                                     padding=True,
@@ -276,7 +272,7 @@ class HFCausalLMGenerator(BaseGenerator):
 
 
                 responses.append(new_text.strip())
-        
+
         if return_dict:
             generated_token_ids = ops.cat(generated_token_ids, axis=0)
             generated_token_logits = ops.cat(generated_token_logits, axis=0)
@@ -298,14 +294,14 @@ class HFCausalLMGenerator(BaseGenerator):
         context_ids = input_ids + target_ids
         context_tensor = ms.tensor([context_ids])
         # with torch.no_grad():
-
-        outputs = self.model(context_tensor)
-        logits = outputs.logits
-        logits = logits[0, len(input_ids)-1:len(context_ids)-1, :]
-        logits = logits.to(ms.dtype.float32)
-        # softmax to normalize
-        probs = ops.softmax(logits, axis=-1)
-        # obtain probs of target_ids
-        target_probs = probs[range(len(target_ids)), target_ids].numpy()
+        with self.model.set_grad(requires_grad=False):
+            outputs = self.model(context_tensor)
+            logits = outputs.logits
+            logits = logits[0, len(input_ids)-1:len(context_ids)-1, :]
+            logits = logits.to(ms.dtype.float32)
+            # softmax to normalize
+            probs = ops.softmax(logits, axis=-1)
+            # obtain probs of target_ids
+            target_probs = probs[range(len(target_ids)), target_ids].numpy()
 
         return logits, target_probs

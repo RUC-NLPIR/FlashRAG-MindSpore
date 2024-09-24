@@ -3,7 +3,6 @@ Created by Nestor Demeure.
 This software is released under the Apache License 2.0.
 """
 from typing import List
-import mindspore as ms
 import mindspore.nn as nn
 from mindspore import dtype as mstype
 from mindnlp.transformers import StoppingCriteria, AutoTokenizer
@@ -29,9 +28,9 @@ class StopWordCriteria(StoppingCriteria):
         """
         super().__init__()
         self.tokenizer = tokenizer
-        self.input_sizes = [self.tokenizer.encode(prompt, return_tensors="pt").shape[-1] for prompt in prompts]
+        self.input_sizes = [self.tokenizer.encode(prompt, return_tensors="ms").shape[-1] for prompt in prompts]
         self.stop_words = stop_words
-        self.max_stop_word_size = max((self.tokenizer.encode(word, return_tensors="pt").shape[-1] for word in stop_words), default=0)
+        self.max_stop_word_size = max((self.tokenizer.encode(word, return_tensors="ms").shape[-1] for word in stop_words), default=0)
         self.check_every = check_every
 
     def __call__(self, input_ids, scores, **kwargs) -> bool:

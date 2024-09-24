@@ -1,5 +1,3 @@
-# Source: FiD official repo: https://github.com/facebookresearch/FiD
-# This software is released under Creative Commons public licenses.
 import types
 import mindspore as ms
 import mindspore.nn as nn
