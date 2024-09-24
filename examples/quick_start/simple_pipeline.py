@@ -4,6 +4,10 @@ from flashrag.utils import get_dataset
 from flashrag.pipeline import SequentialPipeline
 from flashrag.prompt import PromptTemplate
 
+# if your mindspore is GPU version, use set_context() to switch environment to GPU
+from mindspore import set_context
+set_context(device_target="GPU",device_id=0)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_path", type=str)
 parser.add_argument("--retriever_path", type=str)
