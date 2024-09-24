@@ -37,7 +37,7 @@ def load_corpus(corpus_path: str):
             'json',
             data_files=corpus_path,
             split="train")
-    return corpus
+    return corpus.source
 
 
 def read_jsonl(file_path):
