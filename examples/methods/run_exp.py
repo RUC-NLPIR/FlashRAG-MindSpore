@@ -538,6 +538,7 @@ if __name__ == "__main__":
     parser.add_argument("--split", type=str)
     parser.add_argument("--dataset_name", type=str)
     parser.add_argument("--gpu_id", type=str)
+    parser.add_argument('--ms_gpu_id', type=int)
 
     func_dict = {
         "AAR-contriever": aar,
@@ -559,6 +560,7 @@ if __name__ == "__main__":
     }
 
     args = parser.parse_args()
-
+    from mindspore import set_context
+    set_context(device_target="GPU",device_id=args.ms_gpu_id,max_device_memory="35GB")
     func = func_dict[args.method_name]
     func(args)
