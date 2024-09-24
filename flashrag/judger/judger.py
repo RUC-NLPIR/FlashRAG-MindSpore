@@ -3,7 +3,6 @@ import json
 from tqdm.auto import trange
 from collections import Counter
 import numpy as np
-# import torch
 import faiss
 from flashrag.retriever.utils import load_model, pooling
 import mindspore as ms
@@ -78,7 +77,7 @@ class SKRJudger(BaseJudger):
 
         # embeddings = cast(torch.Tensor, embeddings)
         # embeddings = torch.nn.functional.normalize(embeddings, dim=-1).detach()
-
+        
         l2_normalize = ms.ops.L2Normalize(axis=-1, epsilon=1e-12)
         embeddings = l2_normalize(embeddings)
         
@@ -186,4 +185,3 @@ class AdaptiveJudger(BaseJudger):
             all_preds.extend(preds)
 
         return all_preds
-
