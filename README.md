@@ -1,6 +1,6 @@
 # <div align="center">⚡FlashRAG-MindSpore: Efficient RAG Toolkit Based on MindSpore<div>
 
->[!Framework]
+>[!Note]
 > This project is based on the MindSpore framework
 
 <div align="center">
