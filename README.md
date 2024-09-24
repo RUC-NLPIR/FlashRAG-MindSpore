@@ -12,7 +12,7 @@
 <a href="https://github.com/RUC-NLPIR/FlashRAG/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-green"></a>
 <a><img alt="Static Badge" src="https://img.shields.io/badge/made_with-Python-blue"></a>
 <a><img alt="MindSpore" src="https://img.shields.io/badge/MindSpore-Supported-red"></a>
-<a><img alt="Chinese Chips" src="https://img.shields.io/badge/Chinese_Chips-Compatible-brightgreen"></a>
+<a><img alt="Chinese Hardwares" src="https://img.shields.io/badge/Chinese_Hardwares-Compatible-brightgreen"></a>
 </div>
 
 
@@ -32,7 +32,9 @@
 
 
 
-FlashRAG-MindSpore is a Python toolkit for Retrieval Augmented Generation (RAG) research, built on the **MindSpore framework and MindNLP**. This toolkit is optimized for Chinese-developed chips and computing platforms while maintaining compatibility with mainstream deep learning environments. It includes 32 pre-processed benchmark RAG datasets and 14 state-of-the-art RAG algorithms, all fully supported in the MindSpore ecosystem.
+FlashRAG-MindSpore is a Python toolkit for Retrieval Augmented Generation (RAG) research, built on the **MindSpore framework and MindNLP**, which is optimized for Chinese-developed chips and computing platforms.
+
+Currently, FlashRAG-MindSpore includes 32 pre-processed benchmark RAG datasets and 9 state-of-the-art RAG algorithms, all fully supported in the MindSpore ecosystem. We will gradually support other algorithms in the FlashRAG repository in the future.
 
 <p align="center">
 <img src="asset/framework.jpg">
@@ -57,45 +59,21 @@ With FlashRAG-MindSpore and our provided resources, you can effortlessly reprodu
 
 - **Optimized Execution**: The library's efficiency is enhanced with tools like vLLM, FastChat for LLM inference acceleration, and Faiss for vector index management.
 
-## :mag_right: Roadmap
-
-FlashRAG is still under development and there are many issues and room for improvement. We will continue to update. And we also sincerely welcome contributions on this open-source toolkit.
-
-- [x] Support OpenAI models
-- [ ] Support Claude and Gemini models
-- [x] Provdide instructions for each component
-- [x] Integrate sentence Transformers
-- [ ] Inlcude more RAG approaches
-- [ ] Add more evaluation metrics (e.g., Unieval, name-entity F1) and benchmarks (e.g., RGB benchmark)
-- [ ] Enhance code adaptability and readability
-
-
-## :page_with_curl: Changelog
-
-[24/08/02] We add support for a new method [<u>Spring</u>](https://arxiv.org/abs/2405.19670), significantly improve the performance of LLM by adding only a few token embeddings. See it result in [<u>result table</u>](#robot-supporting-methods).
-
-[24/07/17] Due to some unknown issues with HuggingFace, our original dataset link has been invalid. We have updaded it. Please check the [new link](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets/) if you encounter any problems.
-
-[24/07/06] We add support for a new method: [<u>Trace</u>](https://arxiv.org/abs/2406.11460), which refine text by constructing a knowledge graph. See it [<u>results</u>](#robot-supporting-methods) and [<u>details</u>](./docs/baseline_details.md).
-
-[24/06/19] We add support for a new method: [<u>IRCoT</u>](https://arxiv.org/abs/2212.10509), and update the [<u>result table</u>](#robot-supporting-methods).
-
-[24/06/15] We provide a [<u>demo</u>](./examples/quick_start/demo_en.py) to perform the RAG process using our toolkit.
-
-[24/06/11] We have integrated `sentence transformers` in the retriever module. Now it's easier to use the retriever without setting pooling methods.
-
-[24/06/05] We have provided detailed document for reproducing existing methods (see [how to reproduce](./docs/reproduce_experiment.md), [baseline details](./docs/baseline_details.md)), and [<u>configurations settings</u>](./docs/configuration.md).
-
-[24/06/02] We have provided an introduction of FlashRAG for beginners, see [<u>an introduction to flashrag</u>](./docs/introduction_for_beginners_en.md) ([<u>中文版</u>](./docs/introduction_for_beginners_zh.md) [<u>한국어</u>](./docs/introduction_for_beginners_kr.md)).
-
-[24/05/31] We supported Openai-series models as generator. 
 
 ## :wrench: Installation 
 
-To get started with FlashRAG, simply clone it from Github and install (requires Python 3.9+): 
+##### Step1: Install MindSpore
+
+Due to the fact that the installation of MindSpore framework depends on different hardware platforms, we do not directly install it automatically. Please follow the official installation link for installation.
+
+Official Installation Link: https://www.mindspore.cn/install
+
+#### Step2: Install FlashRAG-MindSpore
+
+Then, simply clone it from Github and install (requires Python 3.9+): 
 
 ```bash
-git clone https://github.com/RUC-NLPIR/FlashRAG.git
+git clone https://github.com/ignorejjj/FlashRAG-MindSpore.git
 cd FlashRAG
 pip install -e . 
 ```
@@ -391,7 +369,7 @@ In each category, we have implemented corresponding common pipelines. Some pipel
 
 ## :robot: Supporting Methods
 
-We have implemented 14 works with a consistent setting of:
+Based on MindSpore Framework, we currently have implemented 9 works with a consistent setting of:
 - **Generator:** LLAMA3-8B-instruct with input length of 2048
 - **Retriever:** e5-base-v2 as embedding model, retrieve 5 docs per query
 - **Prompt:** A consistent default prompt, template can be found in the [<u>method details</u>](./docs/baseline_details.md).
@@ -405,22 +383,17 @@ It’s important to note that, to ensure consistency, we have utilized a uniform
 
 | Method               | Type           | NQ (EM) | TriviaQA (EM) | Hotpotqa (F1) | 2Wiki (F1)| PopQA (F1)| WebQA(EM) | Specific setting                                                                  |
 |----------------------|----------------|---------|---------------|---------------|---------------|---------------|---------------|------------------------------------------------------------------------------------|
-| Naive Generation     | Sequential     | 22.6    | 55.7          | 28.4          |  33.9| 21.7| 18.8| |
-| Standard RAG         | Sequential     | 35.1    | 58.9          | 35.3          | 21.0 | 36.7|15.7| |
-| [AAR-contriever-kilt](https://aclanthology.org/2023.acl-long.136.pdf)  | Sequential     | 30.1    | 56.8          | 33.4          | 19.8 | 36.1  | 16.1| |
-| [LongLLMLingua](https://arxiv.org/abs/2310.06839)        | Sequential     | 32.2    | 59.2          | 37.5          |25.0| 38.7| 17.5| Compress Ratio=0.5 |
-| [RECOMP-abstractive](https://arxiv.org/pdf/2310.04408)   | Sequential     | 33.1    | 56.4          | 37.5          | 32.4 | 39.9| 20.2| |
-| [Selective-Context](https://arxiv.org/abs/2310.06201)    | Sequential     | 30.5    | 55.6          | 34.4          |18.5| 33.5| 17.3| Compress Ratio=0.5|
-| [Trace](https://arxiv.org/abs/2406.11460) | Sequential | 30.7 | 50.2 | 34.0 | 15.5 | 37.4 | 19.9 | |
-| [Spring](https://arxiv.org/abs/2405.19670) | Sequential | 37.9 | 64.6 |42.6 | 37.3 |54.8 |27.7 | Use Llama2-7B-chat with trained embedding table |
-| [SuRe](https://arxiv.org/abs/2404.13081)                 | Branching      | 37.1    | 53.2          | 33.4          |20.6|48.1|24.2| Use provided prompt|
-| [REPLUG](https://arxiv.org/abs/2301.12652)               | Branching      | 28.9    | 57.7          | 31.2          |21.1|27.8|20.2|  |
-| [SKR](https://aclanthology.org/2023.findings-emnlp.691.pdf)                  | Conditional    | 33.2   | 56.0          | 32.4          | 23.4 |31.7|17.0|Use infernece-time training data|
-| [Ret-Robust](https://arxiv.org/abs/2310.01558)           | Loop     | 42.9    | 68.2          | 35.8          |43.4|57.2|33.7| Use LLAMA2-13B with trained lora|
-| [Self-RAG](https://arxiv.org/abs/2310.11511)             | Loop   | 36.4    | 38.2          | 29.6          | 25.1|32.7|21.9| Use trained selfrag-llama2-7B|
-| [FLARE](https://arxiv.org/abs/2305.06983)                | Loop   | 22.5    | 55.8          | 28.0          |33.9| 20.7| 20.2| |
-| [Iter-Retgen](https://arxiv.org/abs/2305.15294),      [ITRG](https://arxiv.org/abs/2310.05149)   | Loop | 36.8    | 60.1          | 38.3          | 21.6| 37.9| 18.2| |
-| [IRCoT](https://aclanthology.org/2023.acl-long.557.pdf) | Loop | 33.3| 56.9|41.5|32.4 |45.6 |20.7 | |
+| Naive Generation     | Sequential     | 22.4    | 51.7          | 28.4          |  31.6| 22.9| 18.5| |
+| Standard RAG         | Sequential     | 34.9    | 56.5         | 35.7          | 21.8 | 36.6|15.9| |
+| [AAR-contriever-kilt](https://aclanthology.org/2023.acl-long.136.pdf)  | Sequential     | 30.6    | 53.8          | 33.8          | 20.6 | 36.4  | 16.5| |
+| [LongLLMLingua](https://arxiv.org/abs/2310.06839)        | Sequential     | 29.3    | 51.4          | 33.9          |20.9| 31.8| 18.2| Compress Ratio=0.5 |
+| [RECOMP-abstractive](https://arxiv.org/pdf/2310.04408)   | Sequential     | 33.3    | 52.9         | 37.5          | 32.3 | 39.9| 20.5| |
+| [Selective-Context](https://arxiv.org/abs/2310.06201)    | Sequential     | 30.7    | 56.5          | 35.3          |19.7| 33.4| 17.0| Compress Ratio=0.5|
+| [REPLUG](https://arxiv.org/abs/2301.12652)               | Branching      | 30.9    | 57.0          | 32.6          |22.9|28.0|20.1|  |
+| [SKR](https://aclanthology.org/2023.findings-emnlp.691.pdf)                  | Conditional    | 32.4   | 56.0          | 32.3          | 24.3 |31.3|16.5|Use infernece-time training data|
+| [FLARE](https://arxiv.org/abs/2305.06983)                | Loop   | 22.5    | 50.7          | 27.2          |31.9| 18.9| 20.7| |
+| [Iter-Retgen](https://arxiv.org/abs/2305.15294),      [ITRG](https://arxiv.org/abs/2310.05149)   | Loop | 36.2    | 58.1          | 38.4          | 22.4| 37.9| 17.7| |
+| [IRCoT](https://aclanthology.org/2023.acl-long.557.pdf) | Loop | 27.9| 51.6|36.6|25.7 |42.4 |19.0 | |
 
 
 ## :notebook: Supporting Datasets & Document Corpus

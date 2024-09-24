@@ -11,3 +11,4 @@ spacy>=3.6.1
 tiktoken
 tqdm
 streamlit
+mindnlp
