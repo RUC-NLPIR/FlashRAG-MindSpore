@@ -3,6 +3,10 @@ from flashrag.config import Config
 from flashrag.utils import get_retriever, get_generator
 from flashrag.prompt import PromptTemplate
 
+# if your mindspore is GPU version, use set_context() to switch environment to GPU
+from mindspore import set_context
+set_context(device_target="GPU",device_id=0)
+
 config_dict = {
     "save_note": "demo",
     "generator_model": "qwen-14B",
