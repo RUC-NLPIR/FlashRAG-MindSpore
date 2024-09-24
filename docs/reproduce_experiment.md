@@ -105,7 +105,8 @@ Run the experiment on the NQ dataset using the following command.
 python run_exp.py --method_name 'naive' \
                   --split 'test' \
                   --dataset_name 'nq' \
-                  --gpu_id '0,1,2,3'
+                  --gpu_id '0,1,2,3' \
+                  --ms_gpu_id '0'
 ```
 
 The method can be selected from the following:
