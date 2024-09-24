@@ -51,6 +51,7 @@ class Index_Builder:
         self.use_sentence_transformer = use_sentence_transformer
 
         self.gpu_num = mindtorch.torch.cuda.device_count()
+
         # prepare save dir
         print(self.save_dir)
         if not os.path.exists(self.save_dir):
@@ -64,7 +65,7 @@ class Index_Builder:
         self.embedding_save_path = os.path.join(self.save_dir, f"emb_{self.retrieval_method}.memmap")
 
         self.corpus = list(load_corpus(self.corpus_path))
-
+        
         print("Finish loading...")
     @staticmethod
     def _check_dir(dir_path):
@@ -164,8 +165,8 @@ class Index_Builder:
 
         for start_idx in tqdm(range(0, len(self.corpus), self.batch_size), desc='Inference Embeddings:'):
             # print(self.corpus[start_idx:start_idx+self.batch_size][0])
-            batch_data = [item[1].asnumpy().tolist() for item in self.corpus[start_idx:start_idx+self.batch_size]]
-
+            # batch_data = [item[1].asnumpy().tolist() for item in self.corpus[start_idx:start_idx+self.batch_size]]
+            batch_data = [item[1] for item in self.corpus[start_idx:start_idx+self.batch_size]]
             # batch_data = self.corpus[start_idx : start_idx + self.batch_size]["contents"]
 
             if self.retrieval_method == "e5":
@@ -233,6 +234,7 @@ class Index_Builder:
         else:
             self.encoder, self.tokenizer = load_model(model_path = self.model_path,
                                                     use_fp16 = self.use_fp16)
+            
             hidden_size = self.encoder.config.hidden_size
 
         if self.embedding_path is not None:
