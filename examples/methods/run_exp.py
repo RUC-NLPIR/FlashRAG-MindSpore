@@ -561,6 +561,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     from mindspore import set_context
-    set_context(device_target="GPU",device_id=args.ms_gpu_id,max_device_memory="35GB")
+    set_context(device_target="GPU",device_id=args.ms_gpu_id)
     func = func_dict[args.method_name]
     func(args)
