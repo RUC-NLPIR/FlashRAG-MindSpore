@@ -4,7 +4,8 @@ import json
 import random
 
 import fire
-import torch
+import mindspore as ms
+import mindspore.ops as ops
 from tqdm import tqdm
 
 from flashrag.config import Config
@@ -41,7 +42,7 @@ class LMProbCalculator:
                 score = self.calculate_prob(input_prompt, answer)
                 scores.append(score)
                 docs.append(res["contents"])
-            scores = torch.softmax(torch.tensor(scores), dim=-1).tolist()
+            scores = ops.softmax(ms.tensor(scores), axis=-1).tolist()
             data_ls.append({"query": q, "pos": docs, "scores": scores})
         return data_ls
 
