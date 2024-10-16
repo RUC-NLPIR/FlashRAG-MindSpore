@@ -183,17 +183,13 @@ class Config:
             yaml.dump(self.final_config, f)
 
     def _set_seed(self):
-        import torch
+        import mindspore as ms
         import numpy as np
 
         seed = self.final_config["seed"]
         random.seed(seed)
         np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.deterministic = True
+        ms.set_seed(seed)
 
     def __setitem__(self, key, value):
         if not isinstance(key, str):
