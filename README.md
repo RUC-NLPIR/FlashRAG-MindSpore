@@ -60,7 +60,15 @@ Due to the fact that the installation of MindSpore framework depends on differen
 
 Official Installation Link: https://www.mindspore.cn/install
 
-#### Step2: Install FlashRAG-MindSpore
+#### Step2: Install mindnlp
+
+You can install the official version of MindNLP which is uploaded to pypi.
+
+```bash
+pip install mindnlp
+```
+
+#### Step3: Install FlashRAG-MindSpore
 
 Then, simply clone it from Github and install (requires Python 3.9+): 
 
