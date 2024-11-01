@@ -74,7 +74,7 @@ Then, simply clone it from Github and install (requires Python 3.9+):
 
 ```bash
 git clone https://github.com/RUC-NLPIR/FlashRAG-MindSpore.git
-cd FlashRAG
+cd FlashRAG-MindSpore
 pip install -e . 
 ```
 
