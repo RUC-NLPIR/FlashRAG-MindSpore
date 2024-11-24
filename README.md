@@ -6,6 +6,7 @@
 <div align="center">
 <a href="https://arxiv.org/abs/2405.13576" target="_blank"><img src=https://img.shields.io/badge/arXiv-b5212f.svg?logo=arxiv></a>
 <a href="https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets/" target="_blank"><img src=https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace%20Datasets-27b3b4.svg></a>
+<a href="https://www.modelscope.cn/datasets/hhjinjiajie/FlashRAG_Dataset" target="_blank"><img src=https://custom-icon-badges.demolab.com/badge/ModelScope%20Datasets-624aff?style=flat&logo=modelscope&logoColor=white></a>
 <a href="https://github.com/RUC-NLPIR/FlashRAG/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-green"></a>
 <a><img alt="Static Badge" src="https://img.shields.io/badge/made_with-Python-blue"></a>
 <a><img alt="MindSpore" src="https://img.shields.io/badge/MindSpore-Supported-red"></a>
@@ -46,7 +47,7 @@ With FlashRAG-MindSpore and our provided resources, you can effortlessly reprodu
 
 - **Extensive and Customizable Framework**: Includes essential components for RAG scenarios such as retrievers, rerankers, generators, and compressors, allowing for flexible assembly of complex pipelines.
 
-- **Comprehensive Benchmark Datasets**: A collection of 32 pre-processed RAG benchmark datasets to test and validate RAG models' performances.
+- **Comprehensive Benchmark Datasets**: A collection of 36 pre-processed RAG benchmark datasets to test and validate RAG models' performances.
 
 - **Pre-implemented Advanced RAG Algorithms**: Features 9 advancing RAG algorithms with reported results, based on our framework. Easily reproducing results under different settings.
 
@@ -400,7 +401,7 @@ It’s important to note that, to ensure consistency, we have utilized a uniform
 
 ### Datasets
 
-We have collected and processed 35 datasets widely used in RAG research, pre-processing them to ensure a consistent format for ease of use. For certain datasets (such as Wiki-asp), we have adapted them to fit the requirements of RAG tasks according to the methods commonly used within the community. All datasets are available at [<u>Huggingface datasets</u>](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets). 
+We have collected and processed 36 datasets widely used in RAG research, pre-processing them to ensure a consistent format for ease of use. For certain datasets (such as Wiki-asp), we have adapted them to fit the requirements of RAG tasks according to the methods commonly used within the community. All datasets are available at [<u>Huggingface datasets</u>](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets). 
 
 For each dataset, we save each split as a `jsonl` file, and each line is a dict as follows:
 ```python
@@ -427,7 +428,7 @@ Below is the list of datasets along with the corresponding sample sizes:
 | QA                        | WebQuestions    | Google Freebase  | 3,778     | /       | 2,032  |
 | QA                        | AmbigQA         | wiki             | 10,036    | 2,002   | /      |
 | QA                        | SIQA            | -                | 33,410    | 1,954   | /      |
-| QA                        | CommenseQA      | -                | 9,741     | 1,221   | /      |
+| QA                        | CommonSenseQA      | -                | 9,741     | 1,221   | /      |
 | QA                        | BoolQ           | wiki             | 9,427     | 3,270   | /      |
 | QA                        | PIQA            | -                | 16,113    | 1,838   | /      |
 | QA                        | Fermi           | wiki             | 8,000     | 1,000   | 1,000  |
@@ -435,20 +436,24 @@ Below is the list of datasets along with the corresponding sample sizes:
 | multi-hop QA              | 2WikiMultiHopQA | wiki             | 15,000    | 12,576  | /      |
 | multi-hop QA              | Musique         | wiki             | 19,938    | 2,417   | /      |
 | multi-hop QA              | Bamboogle       | wiki             | /         | /       | 125    |
+| multi-hop QA              | StrategyQA      | wiki             | 2290      | /       | /
 | Long-form QA              | ASQA            | wiki             | 4,353     | 948     | /      |
 | Long-form QA              | ELI5            | Reddit           | 272,634   | 1,507   | /      |
+| Long-form QA              | WikiPassageQA            | wiki             | 3,332     | 417    |  416      |
 | Open-Domain Summarization | WikiASP         | wiki             | 300,636   | 37,046  | 37,368 |
 | multiple-choice           | MMLU            | -                | 99,842    | 1,531   | 14,042 |
 | multiple-choice           | TruthfulQA      | wiki             | /         | 817     | /      |
 | multiple-choice           | HellaSWAG       | ActivityNet      | 39,905    | 10,042  | /      |
 | multiple-choice           | ARC             | -                | 3,370     | 869     | 3,548  |
 | multiple-choice           | OpenBookQA      | -                | 4,957     | 500     | 500    |
+| multiple-choice           | QuaRTz      | -                | 2696     | 384     | 784    |
 | Fact Verification         | FEVER           | wiki             | 104,966   | 10,444  | /      |
 | Dialog Generation         | WOW             | wiki             | 63,734    | 3,054   | /      |
 | Entity Linking            | AIDA CoNll-yago | Freebase & wiki  | 18,395    | 4,784   | /      |
 | Entity Linking            | WNED            | Wiki             | /         | 8,995   | /      |
 | Slot Filling              | T-REx           | DBPedia          | 2,284,168 | 5,000   | /      |
 | Slot Filling              | Zero-shot RE    | wiki             | 147,909   | 3,724   | /      |
+| In-domain QA| DomainRAG | Web pages of RUC| / | / | 485|
 
 ### Document Corpus
 
@@ -465,6 +470,11 @@ In the academic research, Wikipedia and MS MARCO are the most commonly used retr
 
 For MS MARCO, it is already processed upon release and can be directly downloaded from its [<u>hosting link</u>](https://huggingface.co/datasets/Tevatron/msmarco-passage-corpus) on Hugging Face.
 
+### Index
+
+To facilitate easier replication of the experiments, we now provide a preprocessed index available in the ModelScope dataset page: [FlashRAG_Dataset/retrieval_corpus/wiki18_100w_e5_index.zip](https://www.modelscope.cn/datasets/hhjinjiajie/FlashRAG_Dataset/file/view/master?id=47985&status=2&fileName=retrieval_corpus%252Fwiki18_100w_e5_index.zip). 
+
+The index was created using the e5-base-v2 retriever on our uploaded wiki18_100w dataset, which is consistent with the index used in our experiments.
 
 ## :raised_hands: Additional FAQs
 

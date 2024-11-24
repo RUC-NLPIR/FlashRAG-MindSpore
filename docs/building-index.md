@@ -19,7 +19,7 @@ Then, use the following code to build your own index.
 
 * For **dense retrieval methods**, especially the popular embedding models, we use `faiss` to build index. 
 
-* For **sparse retrieval method (BM25)**, we construct corpus as Lucene inverted indexes based on `Pyserini`. The constructed index contains the original doc.
+* For **sparse retrieval method (BM25)**, we construct corpus as Lucene inverted indexes based on `Pyserini` or `bm25s`. The constructed index contains the original doc.
 
 
 #### For dense retrieval methods
@@ -33,14 +33,15 @@ python -m flashrag.retriever.index_builder \
     --corpus_path indexes/sample_corpus.jsonl \
     --save_dir indexes/ \
     --use_fp16 \
-    --max_length 200 \
-    --batch_size 32 \
+    --max_length 512 \
+    --batch_size 256 \
     --pooling_method mean \
     --faiss_type Flat 
 ```
 
-* ```--pooling_method```: If this is not specified, we will automatically select based on the model name. However, due to the different pooling methods used by different embedding models, **we may not have fully implemented them**. To ensure accuracy, you can **specify the pooling method corresponding to the retrieval model** you are using (`mean`, `pooler` or `cls`).
+* ```--pooling_method```: If this is not specified, we will automatically select based on the model name and model file. However, due to the different pooling methods used by different embedding models, **we may not have fully implemented them**. To ensure accuracy, you can **specify the pooling method corresponding to the retrieval model** you are using (`mean`, `pooler` or `cls`).
 
+* ```---instruction```: Some embedding models require additional instructions to concatenate the query before encoding, which can be specified here. At present, we will automatically fill in the instructions for **E5** and **BGE** models, while other models need to be manually supplemented.
 
 If the retrieval model support `sentence transformers` library, you can use following code to build index (**no need to consider pooling method**).
 
@@ -51,8 +52,8 @@ python -m flashrag.retriever.index_builder \
     --corpus_path indexes/sample_corpus.jsonl \
     --save_dir indexes/ \
     --use_fp16 \
-    --max_length 200 \
-    --batch_size 32 \
+    --max_length 512 \
+    --batch_size 256 \
     --pooling_method mean \
     --sentence_transformer \
     --faiss_type Flat 
@@ -63,11 +64,25 @@ python -m flashrag.retriever.index_builder \
 
 #### For sparse retrieval method (BM25)
 
-If building a bm25 index, there is no need to specify `model_path`:
+If building a bm25 index, there is no need to specify `model_path`.
+
+##### Use BM25s to build index
+
 ```bash
 python -m flashrag.retriever.index_builder \
     --retrieval_method bm25 \
     --corpus_path indexes/sample_corpus.jsonl \
+    --bm25_backend bm25s \
+    --save_dir indexes/ 
+```
+
+##### Use Pyserini to build index
+
+```bash
+python -m flashrag.retriever.index_builder \
+    --retrieval_method bm25 \
+    --corpus_path indexes/sample_corpus.jsonl \
+    --bm25_backend pyserini \
     --save_dir indexes/ 
 ```
 

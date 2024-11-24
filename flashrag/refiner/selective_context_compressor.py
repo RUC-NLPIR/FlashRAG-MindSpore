@@ -37,7 +37,6 @@ class SelectiveContext:
 
     def __init__(self, model_type = 'gpt2', model_path = 'openai-community/gpt2', lang = 'en'):
 
-        print("refiner4")
         self.model_type = model_type
         self.model_path = model_path
         self.lang = lang

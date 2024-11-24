@@ -1,6 +1,7 @@
 from typing import List
 from mindnlp.transformers import AutoModelForSeq2SeqLM,AutoTokenizer
 from flashrag.retriever.utils import load_model, pooling
+from flashrag.retriever.encoder import Encoder
 from tqdm import tqdm
 import re
 import mindspore as ms
@@ -11,7 +12,6 @@ class BaseRefiner:
     r"""Base object of Refiner method"""
 
     def __init__(self, config):
-        print("refiner3")
         self.config = config
         self.name = config['refiner_name']
         self.model_path = config['refiner_model_path']
@@ -145,7 +145,13 @@ class ExtractiveRefiner(BaseRefiner):
         self.encode_max_length = config['refiner_encode_max_length']
 
         # load model
-        self.encoder, self.tokenizer = load_model(self.model_path, use_fp16=True)
+        self.encoder = Encoder(
+            model_name=self.name, 
+            model_path=self.model_path, 
+            pooling_method=self.pooling_method, 
+            max_length=self.encode_max_length, 
+            use_fp16=True
+        )
 
     def encode(self, query_list: List[str], is_query=True):
         if "e5" in self.model_path.lower():
@@ -199,8 +205,16 @@ class ExtractiveRefiner(BaseRefiner):
             batch_questions = questions[idx:idx+batch_size]
             batch_sents = sent_lists[idx:idx+batch_size]
 
-            question_embs = self.encode(batch_questions, is_query=True)
-            sent_embs = self.encode(sum(batch_sents, []), is_query=False) # n*d
+            question_embs = self.encoder.encode(batch_questions, is_query=True)
+            
+            flatten_batch_sents = sum(batch_sents, [])
+            sent_embs = []
+            for s_index in tqdm(range(0, len(flatten_batch_sents), self.mini_batch_size), desc='Sentence encoding..,'):
+                mini_batch_sents = flatten_batch_sents[s_index:s_index+self.mini_batch_size]
+                mini_sent_embs = self.encoder.encode(mini_batch_sents, is_query=False)
+                sent_embs.append(mini_sent_embs)
+            sent_embs = np.concatenate(sent_embs, axis=0)
+
             scores = question_embs @ sent_embs.T
             start_idx = 0
             for row_score, single_list in zip(scores,sent_lists):
@@ -211,6 +225,7 @@ class ExtractiveRefiner(BaseRefiner):
         # select topk sents
         retain_lists = []
         for sent_scores, sent_list in zip(score_lists, sent_lists):
+            assert len(sent_scores) == len(sent_list)
             if len(sent_scores) < self.topk:
                 retain_lists.append(sent_list)
                 continue

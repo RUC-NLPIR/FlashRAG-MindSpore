@@ -633,6 +633,8 @@ class FLAREPipeline(BasicPipeline):
             # assert len(sent_ids) == len(sent_score)
             new_query_ids = [i for i,score in zip(sent_ids,sent_score) if score > self.threshold]
             new_query = tokenizer.decode(new_query_ids)
+            if len(new_query) == 0:
+                judge_result = True
         return judge_result, new_query
 
     def run_item(self, item):
@@ -640,7 +642,6 @@ class FLAREPipeline(BasicPipeline):
         gen_length = 0
         iter_round = 0
         final_gen_result = ""
-        print("now question:",question)
         while gen_length < self.max_generation_length and iter_round < self.max_iter_num:
             input_prompt = self.prompt_template.get_string(
                 question=question, previous_gen=final_gen_result)
@@ -827,59 +828,101 @@ class IRCOTPipeline(BasicPipeline):
         self.generator = get_generator(config)
         self.max_iter = max_iter
 
-    def run_item(self, item):
-        question = item.question
-        retrieval_result, scores = self.retriever.search(question, return_score=True)
-        if isinstance(retrieval_result[0],list):
-            retrieval_result = retrieval_result[0]
-        if isinstance(scores[0],list):
-            scores = scores[0]
-        doc2score = {doc_item['id']: score for doc_item, score in zip(retrieval_result, scores)}
-        id2doc = {doc_item['id']: doc_item for doc_item in retrieval_result}
-        thoughts = []
+    def run_batch(self, items):
+        # Initialize the necessary data structures
+        batch_thoughts = {item_id: [] for item_id in range(len(items))}
         iter_num = 0
-        while iter_num < self.max_iter:
-            input_prompt = self.prompt_template.get_string(
-                question = question,
-                retrieval_result = retrieval_result,
-                previous_gen = ' '.join(thoughts)
-            )
-            new_thought = self.generator.generate(input_prompt)[0]
-            thoughts.append(new_thought)
-            iter_num += 1
-            if 'So the answer is:' in new_thought:
-                break
+        batch_retrieval_results = []
+        doc2score_batch = []
+        id2doc_batch = []
+
+        # Initial retrieval for all items in the batch
+        questions = [item.question for item in items]
+        retrieval_results, scoress = self.retriever.batch_search(questions, return_score=True)
+        for retrieval_result, scores in zip(retrieval_results,scoress):   
             
-            # retrieve new docs and merge
-            new_retrieval_result, new_scores = self.retriever.search(new_thought, return_score=True)
-            if isinstance(new_retrieval_result[0],list):
-                new_retrieval_result = new_retrieval_result[0]
-            if isinstance(new_scores[0],list):
-                new_scores = new_scores[0]
-            for doc_item, score in zip(new_retrieval_result, new_scores):
-                id2doc[doc_item['id']] = doc_item
-                doc_id = doc_item['id']
-                if doc_id in doc2score:
-                    doc2score[doc_id] = max(doc2score[doc_id], score)
-                else:
-                    doc2score[doc_id] = score
-            sorted_doc_score = sorted(doc2score.items(),key=lambda x:x[1],reverse=False)
-            sorted_doc_id = [t[0] for t in sorted_doc_score]
-            retrieval_result = [id2doc[id] for id in sorted_doc_id]
+            doc2score = {doc_item['id']: score for doc_item, score in zip(retrieval_result, scores)}
+            id2doc = {doc_item['id']: doc_item for doc_item in retrieval_result}
+            batch_retrieval_results.append(retrieval_result)
+            doc2score_batch.append(doc2score)
+            id2doc_batch.append(id2doc)
 
-            item.update_output(f'intermediate_output_iter{iter_num}', 
-                               {'input_prompt':input_prompt,
-                                'new_thought': new_thought, 
-                                'new_retreival_result': new_retrieval_result
-                                }
+        # Start the iterative process
+        active_item_ids = list(range(len(items)))  # Track items that need more iterations
+        while iter_num < self.max_iter:
+            # Generate prompts and new thoughts for the active items
+            input_prompts = [
+                self.prompt_template.get_string(
+                    question=items[item_id].question,
+                    retrieval_result=batch_retrieval_results[item_id],
+                    previous_gen=' '.join(batch_thoughts[item_id])
+                )
+                for item_id in active_item_ids
+            ]
+            id2prompts = {item_id:self.prompt_template.get_string(
+                            question=items[item_id].question,
+                            retrieval_result=batch_retrieval_results[item_id],
+                            previous_gen=' '.join(batch_thoughts[item_id])
                             )
+                          for item_id in active_item_ids
+                        }
+            input_prompts = [id2prompts[item_id] for item_id in active_item_ids]
 
-        item.update_output('retrieval_result', retrieval_result)
-        item.update_output('pred', ' '.join(thoughts))
-        
+            # Batch generation for active items
+            new_thoughts_batch = self.generator.generate(input_prompts)
+            # new_thoughts_batch = self.generator.generate(input_prompts)
+            
+            # Update thoughts and determine next active items
+            new_active_item_ids = []
+            for idx, item_id in enumerate(active_item_ids):
+                new_thought = new_thoughts_batch[idx]
+                batch_thoughts[item_id].append(new_thought)
+                
+                # Check for termination condition
+                if "So the answer is:" not in new_thought:
+                    new_active_item_ids.append(item_id)
+
+            # Update active item IDs for the next iteration
+            active_item_ids = new_active_item_ids
+
+            # Perform batch retrieval for new thoughts of active items
+            if active_item_ids:
+                new_thoughts_for_retrieval = [batch_thoughts[item_id][-1] for item_id in active_item_ids]
+                new_retrieval_results, new_scoress = self.retriever.batch_search(new_thoughts_for_retrieval, return_score=True)
+
+                for i, item_id in enumerate(active_item_ids):
+                    new_retrieval_result, new_scores = new_retrieval_results[i],new_scoress[i]
+                    
+                    # Update doc2score and id2doc for the current item
+                    for doc_item, score in zip(new_retrieval_result, new_scores):
+                        doc_id = doc_item['id']
+                        id2doc_batch[item_id][doc_id] = doc_item
+                        if doc_id in doc2score_batch[item_id]:
+                            doc2score_batch[item_id][doc_id] = max(doc2score_batch[item_id][doc_id], score)
+                        else:
+                            doc2score_batch[item_id][doc_id] = score
+
+                    # Sort and update retrieval results
+                    sorted_doc_score = sorted(doc2score_batch[item_id].items(), key=lambda x: x[1], reverse=False)
+                    sorted_doc_id = [t[0] for t in sorted_doc_score]
+                    batch_retrieval_results[item_id] = [id2doc_batch[item_id][id] for id in sorted_doc_id]
+                    items[item_id].update_output(f'intermediate_output_iter{iter_num}', 
+                                                    {'input_prompt':id2prompts[item_id],
+                                                        'new_thought': batch_thoughts[item_id][-1], 
+                                                        'new_retreival_result': new_retrieval_result
+                                                    }
+                                                )
+
+            iter_num += 1
+
+        # Final update for each item in the batch
+        for item_id, item in enumerate(items):
+            item.update_output('retrieval_result', batch_retrieval_results[item_id])
+            item.update_output('pred', ' '.join(batch_thoughts[item_id]))
+
     def run(self, dataset, do_eval=True, pred_process_fun=ircot_pred_parse):
-        for item in tqdm(dataset, desc='Inference: '):
-            self.run_item(item)
+
+        self.run_batch(dataset)
 
         dataset = self.evaluate(dataset, do_eval=do_eval, pred_process_fun=pred_process_fun)
         return dataset

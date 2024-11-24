@@ -77,42 +77,50 @@ class SuRePipeline(BasicPipeline):
 
     def load_prompts(self):
         # prompt for candidates generation
-        P_CAN_INSTRUCT = "Below are {N} passages related to the question at the end. After reading" \
-                "the passages, provide two correct candidates for the answer to the" \
-                "question at the end. Each answer should be in the form: (a) xx, (b)" \
-                "yy, and should not exceed 3 words for each candidate.\n\n" \
-                "{reference}" \
-                "Question: {question}\n" \
-                "Answer:"
+        P_CAN_INSTRUCT = (
+            "Below are {N} passages related to the question at the end. After reading"
+            "the passages, provide two correct candidates for the answer to the"
+            "question at the end. Each answer should be in the form: (a) xx, (b)"
+            "yy, and should not exceed 3 words for each candidate.\n\n"
+            "{reference}"
+            "Question: {question}\n"
+            "Answer:"
+        )
 
         # prompt for candidate-conditioned summarization
-        P_SUM_INSTRUCT =  "Reference:\n{reference}\n" \
-                "Your job is to act as a professional writer. You need to write a" \
-                "good-quality passage that can support the given prediction about the" \
-                "question only based on the information in the provided supporting passages.\n" \
-                "Now, let's start. After you write, please write [DONE] to indicate you" \
-                "are done. Do not write a prefix (e.g., 'Response:') while writing a passage.\n" \
-                "Question: {question}\n" \
-                "Prediction: {pred}\n" \
-                "Passage:"
+        P_SUM_INSTRUCT = (
+            "Reference:\n{reference}\n"
+            "Your job is to act as a professional writer. You need to write a"
+            "good-quality passage that can support the given prediction about the"
+            "question only based on the information in the provided supporting passages.\n"
+            "Now, let's start. After you write, please write [DONE] to indicate you"
+            "are done. Do not write a prefix (e.g., 'Response:') while writing a passage.\n"
+            "Question: {question}\n"
+            "Prediction: {pred}\n"
+            "Passage:"
+        )
 
         # prompt for instance-wise validation
-        P_VAL_INSTRUCT = "Question: {question}\n" \
-                "Prediction: {pred}\n" \
-                "Passage: {summary}\n" \
-                "Does the passage correctly support the prediction? Choices: [True,False].\n" \
-                "Answer:"
+        P_VAL_INSTRUCT = (
+            "Question: {question}\n"
+            "Prediction: {pred}\n"
+            "Passage: {summary}\n"
+            "Does the passage correctly support the prediction? Choices: [True,False].\n"
+            "Answer:"
+        )
 
         # prompt for pair-wise ranking
-        P_RANK_INSTRUCT = "Question: Given the following passages, determine which one provides a" \
-                "more informative answer to the subsequent question.\n" \
-                "Passage 1: {summary1}\n" \
-                "Passage 2: {summary2}\n" \
-                "Target Question: {question}\n" \
-                "Your Task:\n" \
-                "Identify which passage (Passage 1 or Passage 2) is more relevant and" \
-                "informative to answer the question at hand. Choices: [Passage 1,Passage 2].\n" \
-                "Answer:"
+        P_RANK_INSTRUCT = (
+            "Question: Given the following passages, determine which one provides a"
+            "more informative answer to the subsequent question.\n"
+            "Passage 1: {summary1}\n"
+            "Passage 2: {summary2}\n"
+            "Target Question: {question}\n"
+            "Your Task:\n"
+            "Identify which passage (Passage 1 or Passage 2) is more relevant and"
+            "informative to answer the question at hand. Choices: [Passage 1,Passage 2].\n"
+            "Answer:"
+        )
 
         self.P_CAN_TEMPLATE = PromptTemplate(self.config, "", P_CAN_INSTRUCT)
         self.P_SUM_TEMPLATE = PromptTemplate(self.config, "", P_SUM_INSTRUCT)

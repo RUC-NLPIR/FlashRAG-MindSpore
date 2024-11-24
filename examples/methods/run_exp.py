@@ -353,7 +353,7 @@ def selfrag(args):
         "save_note": "self-rag",
         "gpu_id": args.gpu_id,
         "generation_params": {
-            "max_new_tokens": 100,
+            "max_tokens": 100,
             "temperature": 0.0,
             "top_p": 1.0,
             "skip_special_tokens": False,
@@ -446,7 +446,7 @@ def ircot(args):
     all_split = get_dataset(config)
     test_data = all_split[args.split]
     print(config["generator_model_path"])
-    pipeline = IRCOTPipeline(config)
+    pipeline = IRCOTPipeline(config, max_iter=5)
 
     result = pipeline.run(test_data)
 
@@ -475,6 +475,7 @@ def trace(args):
         "dataset_name": args.dataset_name,
         "refiner_name": "kg-trace",
         "trace_config": trace_config,
+        "framework": "hf",  # Trance only supports using Huggingface Transformers since it needs logits of outputs
     }
 
     # preparation
@@ -526,9 +527,29 @@ def spring(args):
     generator = get_generator(config)
     generator.add_new_tokens(token_embedding_path, token_name_func=lambda idx: f"[ref{idx+1}]")
 
-    pipeline = SequentialPipeline(
-        config=config, prompt_template=prompt_template, generator=generator
-    )
+    pipeline = SequentialPipeline(config=config, prompt_template=prompt_template, generator=generator)
+    result = pipeline.run(test_data)
+
+
+def adaptive(args):
+    judger_name = "adaptive-rag"
+    model_path = "illuminoplanet/adaptive-rag-classifier"
+
+    config_dict = {
+        "judger_name": judger_name,
+        "judger_config": {"model_path": model_path},
+        "save_note": "adaptive-rag",
+        "gpu_id": args.gpu_id,
+        "dataset_name": args.dataset_name,
+    }
+    # preparation
+    config = Config("my_config.yaml", config_dict)
+    all_split = get_dataset(config)
+    test_data = all_split[args.split]
+
+    from flashrag.pipeline import AdaptivePipeline
+
+    pipeline = AdaptivePipeline(config)
     result = pipeline.run(test_data)
 
 
@@ -557,6 +578,7 @@ if __name__ == "__main__":
         "iterretgen": iterretgen,
         "ircot": ircot,
         "trace": trace,
+        "adaptive": adaptive,
     }
 
     args = parser.parse_args()

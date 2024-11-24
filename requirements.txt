@@ -3,7 +3,6 @@ nltk
 numpy
 openai
 peft
-pyserini
 PyYAML
 rank_bm25
 rouge

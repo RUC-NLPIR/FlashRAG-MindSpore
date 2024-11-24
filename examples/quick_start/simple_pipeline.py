@@ -36,7 +36,10 @@ prompt_templete = PromptTemplate(
                     \nThe following are given documents.\n\n{reference}",
     user_prompt="Question: {question}\nAnswer:",
 )
+
+
 pipeline = SequentialPipeline(config, prompt_template=prompt_templete)
+
 
 output_dataset = pipeline.run(test_data, do_eval=True)
 print("---generation output---")

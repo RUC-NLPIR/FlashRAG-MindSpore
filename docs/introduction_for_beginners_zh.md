@@ -50,7 +50,7 @@ pip install -e .
 
 为了简便，我们从NQ中采样了17条数据作为toy dataset, 其地址在 [examples/quick_start/dataset/nq](../examples/quick_start/dataset/nq/)。后续RAG流程将在这些questions上进行。
 
-我们的仓库中同样提供了大量处理好的基准数据集，可以访问我们[huggingface上的数据集](https://huggingface.co/datasets/ignore/FlashRAG_datasets)进行下载和使用。
+我们的仓库中同样提供了大量处理好的基准数据集，可以访问我们[huggingface上的数据集](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets)进行下载和使用。
 
 ### 2.4 下载文档集合
 
@@ -58,7 +58,7 @@ pip install -e .
 > 由于文档数量较少，可能很多query都无法搜到相关的文本，这可能会影响最终的检索结果。
 
 
-如果需要获取完整的文档集合，可以访问我们[huggingface上的数据集](https://huggingface.co/datasets/ignore/FlashRAG_datasets)进行下载和使用。
+如果需要获取完整的文档集合，可以访问我们[huggingface上的数据集](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets/tree/main/retrieval-corpus)进行下载和使用。
 
 
 ### 2.5 构建用于检索的索引
@@ -141,7 +141,7 @@ config_dict = {
                 'model2path': {'e5': <retriever_path>, 'llama2-7B-chat': <generator_path>},
                 'generator_model': 'llama2-7B-chat',
                 'retrieval_method': 'e5',
-                'metrics': ['em','f1','sub_em'],
+                'metrics': ['em','f1','acc'],
                 'retrieval_topk': 1,
                 'save_intermediate_data': True
             }

@@ -1,5 +1,6 @@
 from typing import List
 from copy import deepcopy
+import warnings
 from tqdm import tqdm
 from tqdm.auto import trange
 import numpy as np
@@ -9,6 +10,7 @@ from mindnlp.transformers import AutoTokenizer, \
                                 AutoModelForCausalLM, \
                                 T5ForConditionalGeneration,\
                                 BartForConditionalGeneration
+from flashrag.generator.utils import resolve_max_tokens
 
 class BaseGenerator:
     """`BaseGenerator` is a base object of Generator model."""
@@ -21,8 +23,8 @@ class BaseGenerator:
         self.batch_size = config['generator_batch_size']
         self.device = config['device']
         # self.gpu_num =  pynvml.nvmlDeviceGetCount()
-
-        self.generation_params = config['generation_params']
+        self.config = config
+        self.generation_params = config["generation_params"]
 
     def generate(self, input_list: list) -> List[str]:
         """Get responses from the generater.
@@ -41,7 +43,9 @@ class EncoderDecoderGenerator(BaseGenerator):
     def __init__(self, config):
         super().__init__(config)
         self.fid = config['use_fid']
-        if "t5" in self.model_name:
+        model_config = AutoConfig.from_pretrained(self.model_path)
+        arch = model_config.architectures[0].lower()
+        if "t5" in arch or 'fusionindecoder' in arch:
             if self.fid:
                 from flashrag.generator.fid import FiDT5
                 self.model = FiDT5.from_pretrained(self.model_path)
@@ -89,11 +93,7 @@ class EncoderDecoderGenerator(BaseGenerator):
             stopping_criteria = [StopWordCriteria(tokenizer=self.tokenizer, prompts=input_list, stop_words=stop_sym)]
             generation_params['stopping_criteria'] = stopping_criteria
 
-        if 'max_tokens' in generation_params:
-            if 'max_tokens' in params:
-                generation_params['max_new_tokens'] = params.pop('max_tokens')
-            else:
-                generation_params['max_new_tokens'] = generation_params.pop('max_tokens')
+        generation_params = resolve_max_tokens(params, generation_params, prioritize_new_tokens=True)
 
         responses = []
         for idx in trange(0, len(input_list), batch_size, desc='Generation process: '):
@@ -105,18 +105,22 @@ class EncoderDecoderGenerator(BaseGenerator):
                           'attention_mask': attention_mask}
             else:
                 inputs = self.tokenizer(batched_prompts,
-                                        return_tensors="pt",
+                                        return_tensors="ms",
                                         padding=True,
                                         truncation=True,
                                         max_length=self.max_input_len
                                     )
 
             # TODO: multi-gpu inference
-            outputs = self.model.generate(
-                **inputs,
-                **generation_params
-            )
-
+            if self.fid:
+                if 'max_new_tokens' in generation_params:
+                    max_new_tokens = generation_params.pop('max_new_tokens')
+                else:
+                    max_new_tokens = 32
+            
+                outputs = self.model.generate(**inputs, max_new_tokens=max_new_tokens, pad_token_id=self.tokenizer.pad_token_id, decoder_start_token_id=self.tokenizer.pad_token_id)
+            else:
+                outputs = self.model.generate(**inputs, **generation_params)
             outputs = self.tokenizer.batch_decode(outputs,
                                                   skip_special_tokens=True,
                                                   clean_up_tokenization_spaces=False)
@@ -177,12 +181,7 @@ class HFCausalLMGenerator(BaseGenerator):
             stopping_criteria = [StopWordCriteria(tokenizer=self.tokenizer, prompts=input_list, stop_words=stop_sym)]
             generation_params['stopping_criteria'] = stopping_criteria
 
-        max_tokens = params.pop('max_tokens', None) or params.pop('max_new_tokens', None)
-        if max_tokens is not None:
-            generation_params['max_new_tokens'] = max_tokens
-        else:
-            generation_params['max_new_tokens'] = generation_params.get('max_new_tokens', generation_params.pop('max_tokens', None))
-        generation_params.pop('max_tokens', None)
+        generation_params = resolve_max_tokens(params, generation_params, prioritize_new_tokens=True)
 
         # set eos token for llama
         if 'llama' in self.model_name.lower():
