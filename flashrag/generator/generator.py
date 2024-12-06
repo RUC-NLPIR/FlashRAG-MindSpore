@@ -195,7 +195,7 @@ class HFCausalLMGenerator(BaseGenerator):
         scores = []
         generated_token_ids = []
         generated_token_logits = []
-        self.model.set_grad(requires_grad=False)
+
         for idx in trange(0, len(input_list), batch_size, desc='Generation process: '):
             # import torch
             # torch.cuda.empty_cache()

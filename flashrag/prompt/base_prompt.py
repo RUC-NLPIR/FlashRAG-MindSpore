@@ -80,7 +80,7 @@ class PromptTemplate:
 
         else:
             assert isinstance(prompt, str)
-            tokenized_prompt = self.tokenizer(prompt, truncation=False, return_tensors="pt").input_ids[0]
+            tokenized_prompt = self.tokenizer(prompt, truncation=False, return_tensors="ms").input_ids[0]
 
             if len(tokenized_prompt) > self.max_input_len:
                 print(f"The input text length is greater than the maximum length ({len(tokenized_prompt)} > {self.max_input_len}) and has been truncated!")
